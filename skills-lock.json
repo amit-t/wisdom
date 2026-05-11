@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "gh-pages-neo-brutalist": {
+      "source": "amit-t/skills",
+      "sourceType": "github",
+      "skillPath": "gh-pages-neo-brutalist/SKILL.md",
+      "computedHash": "7f66b0217014bc561520e00d7e3f72165636333b8f3b3b7827b555afd9c0f332"
+    },
+    "grill-me": {
+      "source": "amit-t/skills",
+      "sourceType": "github",
+      "skillPath": "grill-me/SKILL.md",
+      "computedHash": "74a0c5d35452f4400c8e971de17dab5c80d629c18da2bca149081b0162543f48"
+    }
+  }
+}
