@@ -176,7 +176,25 @@ EOF
   # a directive for the agent. The agent decides whether MCP path is usable.
   return 0
 }
-_wisdom_url_manual_fallback()   { print -r -- "  [stub] manual fallback not implemented yet"; return 1 ; }
+_wisdom_url_manual_fallback() {
+  local url="$1" cache="$2"
+  print -r -- "  manual fallback: opening URL in browser..."
+  if (( $+commands[open] )); then
+    open "$url" >/dev/null 2>&1 || true
+  elif (( $+commands[xdg-open] )); then
+    xdg-open "$url" >/dev/null 2>&1 || true
+  fi
+  print -r -- "  paste the caption / quote / transcript when ready."
+  print -r -- "  end input with Ctrl-D on its own line."
+  local pasted
+  pasted=$(cat)
+  if [[ -z "${pasted//[[:space:]]/}" ]]; then
+    print -r -- "  empty input; aborting." >&2
+    return 7
+  fi
+  print -r -- "$pasted" > "$cache/manual-paste.txt"
+  return 0
+}
 _wisdom_url_transcribe() {
   local cache="$1"
   local audio="" ext
@@ -279,4 +297,66 @@ EOF
   fi
   return 0
 }
-_wisdom_url_launch_extraction() { print -r -- "  [stub] extraction launch not implemented yet"; return 0 ; }
+_wisdom_url_launch_extraction() {
+  local url="$1" cache="$2" engine="$3"
+
+  # Assemble a preview prompt for the agent.
+  local prompt_file="$cache/prompt.txt"
+  {
+    print -r -- "Record a wisdom snippet derived from this URL:"
+    print -r --
+    print -r -- "URL: $url"
+    print -r --
+    if [[ -f "$cache/meta.json" ]]; then
+      print -r -- "## Metadata (yt-dlp)"
+      print -r -- '```json'
+      jq '{title, uploader, channel, description, duration, upload_date, view_count, like_count}' "$cache/meta.json" 2>/dev/null
+      print -r -- '```'
+      print -r --
+    fi
+    if [[ -f "$cache/caption.txt" ]]; then
+      print -r -- "## Caption (Playwright)"
+      print -r -- "$(cat "$cache/caption.txt")"; print -r --
+    fi
+    if [[ -f "$cache/manual-paste.txt" ]]; then
+      print -r -- "## User-pasted content"
+      print -r -- "$(cat "$cache/manual-paste.txt")"; print -r --
+    fi
+    if [[ -f "$cache/transcript.txt" ]]; then
+      print -r -- "## Transcript (Whisper)"
+      print -r -- "$(cat "$cache/transcript.txt")"; print -r --
+    fi
+    if [[ -f "$cache/comments.txt" ]]; then
+      print -r -- "## Top comments"
+      cat "$cache/comments.txt"; print -r --
+    fi
+    if [[ -d "$cache/keyframes" ]]; then
+      print -r -- "## Keyframes available at"
+      print -r -- "$cache/keyframes/"
+      print -r --
+    fi
+    local t="" ext
+    for ext in jpg png webp; do
+      [[ -f "$cache/thumb.$ext" ]] && t="$cache/thumb.$ext"
+    done
+    if [[ -n "$t" ]]; then
+      print -r -- "## Cover image"
+      print -r -- "$t"; print -r --
+    fi
+    if [[ -f "$cache/agent-directive.md" ]]; then
+      print -r --
+      print -r -- "## Scraping directive"
+      cat "$cache/agent-directive.md"
+    fi
+    print -r --
+    print -r -- "Follow the wisdom-capture skill. Use the metadata above plus any"
+    print -r -- "images in the keyframes/cover paths to extract the actual wisdom"
+    print -r -- "body (vision OK — read the images). source_url MUST be the URL"
+    print -r -- "above. import_origin MUST be \"url:$url\"."
+  } > "$prompt_file"
+
+  # Hand off to the existing capture launcher with the prompt as snippet.
+  local snippet
+  snippet=$(<"$prompt_file")
+  _wisdom_launch_engine "$engine" "$snippet"
+}
