@@ -1,0 +1,79 @@
+#!/usr/bin/env zsh
+# Wisdom CLI dispatcher. Routes to lib/cmd_*.zsh modules.
+
+set -u
+script_path=${0:A}
+# bin/ is one level below repo root
+repo_root=${script_path:h:h}
+
+# Source shared helpers + every command module (including stubs).
+source "$repo_root/lib/_shared.zsh"
+for f in "$repo_root"/lib/cmd_*.zsh; do
+  source "$f"
+done
+
+_WISDOM_VERSION="0.1.0"
+
+usage() {
+  cat <<'EOF'
+wisdom — capture, search, and serve personal wisdom snippets
+
+USAGE
+  wisdom                          launch agent session; skill auto-engages
+  wisdom "<text>"                 one-shot capture (text as positional arg)
+  wisdom -                        one-shot capture (text from stdin)
+  wisdom -e                       open $EDITOR with a template, then one-shot
+  wisdom --engine <name>          claude | codex | devin (default: claude)
+
+  wisdom ls [--bucket KEY] [--limit N]
+  wisdom show <id-prefix>
+  wisdom find <query>
+  wisdom edit <id-prefix> [--no-recat]
+  wisdom rm <id-prefix>
+
+  wisdom import <file> [--format md|json|csv|txt|notion-export] [--dry-run]
+  wisdom import-url <url> [<url>...] [--engine ENGINE]
+
+  wisdom help | --help | -h
+  wisdom version | --version | -V
+
+ENVIRONMENT
+  WISDOM_REPO       absolute path to repo (default: ~/Projects/AmitTiwari/wisdom)
+  WISDOM_ENGINE     claude | codex | devin (default: claude)
+  WISDOM_EDITOR     overrides $EDITOR for -e and edit
+  WISDOM_WHISPER    local | api (default: local)
+  WISDOM_NO_PUSH    if set, skill skips push prompts
+
+See docs/USAGE.md for the full reference.
+EOF
+}
+
+version() {
+  print -r -- "wisdom $_WISDOM_VERSION"
+}
+
+main() {
+  if (( $# == 0 )); then
+    _wisdom_capture
+    return $?
+  fi
+
+  case "$1" in
+    -h|--help|help)        usage; return 0 ;;
+    -V|--version|version)  version; return 0 ;;
+    ls)                    shift; _wisdom_ls "$@" ;;
+    show)                  shift; _wisdom_show "$@" ;;
+    find)                  shift; _wisdom_find "$@" ;;
+    edit)                  shift; _wisdom_edit "$@" ;;
+    rm|remove)             shift; _wisdom_rm "$@" ;;
+    import)                shift; _wisdom_import "$@" ;;
+    import-url)            shift; _wisdom_import_url "$@" ;;
+    --engine|-)            _wisdom_capture "$@" ;;
+    -e)                    _wisdom_capture "$@" ;;
+    -*)                    print -r -- "wisdom: unknown flag: $1" >&2; usage >&2; return 1 ;;
+    *)
+      _wisdom_capture "$@" ;;
+  esac
+}
+
+main "$@"
