@@ -5,12 +5,33 @@ entering this repo should follow these rules.
 
 ## When asked to record a wisdom snippet
 
-Load and follow `.agents/skills/wisdom-capture/SKILL.md` exactly.
+Load and follow the `wisdom-capture` skill exactly.
 
-In Claude Code, this skill is named `wisdom-capture` and is also reachable via
-the `/wisdom` slash-command.
-In Devin, use `/wisdom`.
-In Codex, use `$wisdom`.
+The skill is installed per-project from the at-skills catalog. Engine-specific
+locations after install:
+
+- Claude Code: `.claude/skills/wisdom-capture/SKILL.md` (project-level)
+- Devin / Windsurf: `.cognition/skills/wisdom-capture/SKILL.md`
+- Cursor: `.cursor/skills/wisdom-capture/SKILL.md`
+- Codex: skill content is concatenated into this `AGENTS.md` by the installer
+
+If you cannot find the skill in any of those locations, the user has not run
+the installer yet. From the repo root:
+
+```bash
+npx skills@latest add amit-t/skills --skill wisdom-capture
+```
+
+Triggers inside an agent session:
+
+- Claude Code: `/wisdom-capture` (or just describe the task — the skill
+  description triggers auto-invoke)
+- Devin: `/wisdom-capture`
+- Codex: `$wisdom-capture`
+
+The terminal CLI shortcut is `wisdom "..."` — that command launches an agent
+session in this repo with the snippet pre-fed; the skill takes over from
+there.
 
 ## Repository conventions
 

@@ -9,8 +9,35 @@ if (( ! $+commands[claude] )); then
   exit 0
 fi
 
-fixtures_dir="$repo_root/.agents/skills/wisdom-capture/examples"
-skill_path="$repo_root/.agents/skills/wisdom-capture/SKILL.md"
+# Skill is installed per-project via:
+#   npx skills@latest add amit-t/skills --skill wisdom-capture
+# Look it up in the project-level locations a known engine would use.
+skill_root=""
+for candidate in \
+  "$repo_root/.claude/skills/wisdom-capture" \
+  "$repo_root/.cognition/skills/wisdom-capture" \
+  "$repo_root/.cursor/skills/wisdom-capture" \
+  "$repo_root/.windsurf/skills/wisdom-capture"
+do
+  if [[ -f "$candidate/SKILL.md" ]]; then
+    skill_root="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$skill_root" ]]; then
+  print -r -- "SKIP: wisdom-capture skill not installed in this project."
+  print -r -- "      Install with: npx skills@latest add amit-t/skills --skill wisdom-capture"
+  exit 0
+fi
+
+fixtures_dir="$skill_root/examples"
+skill_path="$skill_root/SKILL.md"
+
+if [[ ! -d "$fixtures_dir" ]]; then
+  print -r -- "SKIP: skill installed but examples/ missing at $fixtures_dir"
+  exit 0
+fi
 
 # We don't really need to run the whole capture flow; we just want to confirm
 # the model, given the SKILL.md context, picks the same primary category as

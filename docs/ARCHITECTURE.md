@@ -32,8 +32,10 @@ bin/wisdom              # thin zsh dispatcher
     ├── _url_helpers.zsh      # url_hash, url_cache_dir, url_domain
     └── cmd_*.zsh       # one module per subcommand
 
-.agents/skills/wisdom-capture/
-└── SKILL.md            # 11-step categorize→write→commit→push flow
+.claude/skills/wisdom-capture/   # installed per-project via:
+└── SKILL.md                     #   npx skills@latest add amit-t/skills --skill wisdom-capture
+                                 # canonical source: github.com/amit-t/skills/tree/main/wisdom-capture
+                                 # 11-step categorize→write→commit→push flow
 
 wisdoms/
 ├── _categories.yml     # closed taxonomy + color_pool
