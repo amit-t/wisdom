@@ -96,3 +96,21 @@ wisdom_cd_repo() {
   p=$(WISDOM_REPO_STRICT=1 wisdom_repo_path) || return $?
   cd "$p" || return 2
 }
+
+_WISDOM_LEN_MIN=20
+_WISDOM_LEN_MAX=5000
+
+# Check body length. Exits 6 if under min. Warns to stderr if over max but
+# returns 0.
+wisdom_check_length() {
+  local body="$1"
+  local n=${#body}
+  if (( n < _WISDOM_LEN_MIN )); then
+    print -r -- "wisdom: snippet too short ($n chars; min $_WISDOM_LEN_MIN)" >&2
+    return 6
+  fi
+  if (( n > _WISDOM_LEN_MAX )); then
+    print -r -- "wisdom: this looks long ($n chars; soft max $_WISDOM_LEN_MAX). Storing anyway." >&2
+  fi
+  return 0
+}
