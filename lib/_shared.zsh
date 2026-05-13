@@ -48,3 +48,29 @@ wisdom_ulid() {
 
   print -r -- "${out}${r}"
 }
+
+# Normalize a body for hashing:
+# 1. trim leading/trailing whitespace
+# 2. collapse all whitespace runs to a single space
+# 3. lowercase
+wisdom_body_normalize() {
+  local s="$1"
+  # tr collapses all whitespace classes to one space; sed trims ends.
+  print -r -- "$s" \
+    | tr -s '[:space:]' ' ' \
+    | sed -E 's/^ +//; s/ +$//' \
+    | tr '[:upper:]' '[:lower:]'
+}
+
+# Compute sha256 hex of the normalized body.
+wisdom_body_hash() {
+  local s="$1"
+  local norm
+  norm=$(wisdom_body_normalize "$s")
+  # macOS: `shasum -a 256`. Linux fallback: `sha256sum`.
+  if (( $+commands[shasum] )); then
+    print -r -- "$norm" | shasum -a 256 | awk '{print $1}'
+  else
+    print -r -- "$norm" | sha256sum | awk '{print $1}'
+  fi
+}
