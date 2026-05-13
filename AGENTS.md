@@ -47,16 +47,21 @@ consume.
 
 ### Auto-redeploy on push
 
-`.github/workflows/trigger-amittiwari-me.yml` POSTs to a DigitalOcean App
-Platform deploy webhook whenever main moves, so a new `wisdom "..."` capture
-goes live on amittiwari.me without manual intervention.
+`.github/workflows/trigger-amittiwari-me.yml` calls the DigitalOcean API on
+every push to main and asks App Platform to redeploy the amittiwari.me
+app, so a new `wisdom "..."` capture goes live without manual steps.
 
-One-time setup (only needed when the webhook URL rotates or the repo is
-re-forked):
-1. DO console → amittiwari-me app → Settings → App-Level → Deploy Triggers
-   → create a webhook and copy the URL.
-2. This repo → Settings → Secrets and variables → Actions → New secret:
-   `AMITTIWARI_ME_DO_DEPLOY_WEBHOOK = <url>`.
+One-time setup (only when the token rotates or the app is re-created):
+1. Create a DO Personal Access Token at
+   `https://cloud.digitalocean.com/account/api/tokens` with `apps:read` +
+   `apps:write` scopes (or full read/write if your account doesn't show
+   scopes).
+2. Grab the App ID for amittiwari.me from the DO console — open the app
+   and copy the UUID in the URL (`/apps/<uuid>`) — or run
+   `doctl apps list`.
+3. This repo → Settings → Secrets and variables → Actions → add both:
+   - `DO_API_TOKEN` = token from step 1
+   - `DO_APP_ID` = UUID from step 2
 
-Until the secret exists, the workflow runs but emits a warning and skips
-the POST; pushes are not blocked.
+Missing either secret turns the workflow into a no-op with a warning, so
+pushes are never blocked.
