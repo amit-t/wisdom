@@ -47,7 +47,9 @@ assert_exit_code() {
 
 assert_file_exists() {
   local path="$1"
-  if [[ ! -e "$path" ]]; then
+  # Accept either real files or symlinks (even dangling), since some tasks
+  # set up symlinks whose targets are created in a later task.
+  if [[ ! -e "$path" && ! -L "$path" ]]; then
     print -r -- "  FAIL: file does not exist: $path" >&2
     exit 1
   fi
