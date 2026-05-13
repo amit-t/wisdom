@@ -1,9 +1,4 @@
 .wisdom-session
 .cache/
-_site/
-.jekyll-cache/
-.bundle/
-vendor/
-node_modules/
-*.gem
 .DS_Store
+node_modules/

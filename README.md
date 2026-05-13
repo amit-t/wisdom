@@ -1,11 +1,19 @@
 # wisdom
 
-Personal wisdom corpus + searchable site.
+Personal wisdom corpus + capture CLI.
+
+This repo is the **single source of truth** for the wisdom snippets:
+markdown files with frontmatter under `wisdoms/<YYYY>/<MM>/<ulid>.md`, plus a
+shell-first CLI to capture them from any terminal or agent session. The
+snippets are rendered as a public page by
+[amittiwari.me](https://amittiwari.me/wisdom), which consumes this repo as a
+git submodule at build time — there is no longer a standalone Jekyll site
+here.
 
 Capture a snippet from any terminal or agent session. The skill categorizes
-it into a closed bucket, writes a frontmatter Markdown file under `wisdoms/`,
-commits, and (optionally) pushes. The repo deploys as a neo-brutalist GitHub
-Pages site with Pagefind search.
+it into a closed bucket, writes a frontmatter markdown file under `wisdoms/`,
+commits, and (optionally) pushes. amittiwari.me picks it up on its next
+build.
 
 ## Quickstart
 

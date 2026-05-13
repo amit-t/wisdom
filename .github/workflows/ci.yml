@@ -15,27 +15,3 @@ jobs:
           brew install jq ripgrep
       - name: Run test suite
         run: zsh tests/run.zsh
-
-  site-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
-          bundler-cache: true
-      - name: Build Jekyll
-        run: bundle exec jekyll build
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Build Pagefind index
-        run: npx -y pagefind@latest --site _site
-      - name: Verify routes
-        run: |
-          test -f _site/index.html
-          test -f _site/search/index.html
-          test -f _site/about/index.html
-          for b in engineering leadership writing product craft life; do
-            test -f "_site/buckets/$b/index.html"
-          done
