@@ -22,12 +22,28 @@ assert_contains "$out" "wisdom" "--version output"
 rc=$?
 assert_exit_code 1 $rc "unknown subcommand"
 
-# Stub subcommands print "not implemented yet" but exit 0
-for sub in ls show find edit rm import import-url; do
-  "$repo_root/bin/wisdom" $sub >/tmp/wis-out 2>&1
+# Subcommands route (real impls in P3; ls/show/find/edit/rm/import/import-url).
+# `ls` on an empty repo prints "no wisdoms yet". `import`/`import-url` without
+# args print a usage error and exit 1. `show`/`edit`/`rm` without args exit 1.
+# We assert routing happens (exit code as expected for each subcommand's
+# no-arg invocation).
+tmp_repo=$(mktemp -d -t wisdom-dispatch.XXXXXX)
+mkdir -p "$tmp_repo/wisdoms"
+cp "$repo_root/wisdoms/_categories.yml" "$tmp_repo/wisdoms/_categories.yml"
+
+# `ls` with no args on empty repo -> exit 0, mentions wisdoms
+WISDOM_REPO="$tmp_repo" "$repo_root/bin/wisdom" ls >/tmp/wis-out 2>&1
+rc=$?
+assert_exit_code 0 $rc "ls exit code on empty repo"
+grep -qi 'no wisdoms\|wisdom' /tmp/wis-out || {
+  print -r -- "FAIL: ls must produce some output"; exit 1
+}
+
+# Subcommands that require an arg exit 1 with usage error
+for sub in show find edit rm import import-url; do
+  WISDOM_REPO="$tmp_repo" "$repo_root/bin/wisdom" $sub >/tmp/wis-out 2>&1
   rc=$?
-  assert_exit_code 0 $rc "stub $sub exit code"
-  grep -qi 'not implemented' /tmp/wis-out || {
-    print -r -- "FAIL: stub $sub must say 'not implemented yet'"; exit 1
-  }
+  assert_exit_code 1 $rc "$sub without arg must exit 1"
 done
+
+rm -rf "$tmp_repo"
