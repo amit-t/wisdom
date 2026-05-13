@@ -2,6 +2,7 @@ title: Wisdom
 description: A searchable corpus of curated wisdom
 baseurl: /wisdom
 url: https://amit-t.github.io
+github_url: https://github.com/amit-t/wisdom
 theme: null
 
 plugins:
@@ -27,6 +28,31 @@ exclude:
   - README.md
   - LICENSE
   - .github
+  - bin
+  - lib
+  - install.sh
+  - tests
+  - docs/superpowers
+  - .agents
+  - .cache
+  - skills-lock.json
+  - AGENTS.md
+  - CLAUDE.md
+
+nav:
+  - { label: Engineering, href: /buckets/engineering/ }
+  - { label: Leadership,  href: /buckets/leadership/ }
+  - { label: Writing,     href: /buckets/writing/ }
+  - { label: Product,     href: /buckets/product/ }
+  - { label: Craft,       href: /buckets/craft/ }
+  - { label: Life,        href: /buckets/life/ }
+  - { label: Search,      href: /search/ }
+  - { label: About,       href: /about/ }
+
+collections:
+  wisdoms:
+    output: true
+    permalink: /w/:id/
 
 defaults:
   - scope: { path: "" }
@@ -35,3 +61,23 @@ defaults:
   - scope: { path: "index.md" }
     values:
       layout: home
+  - scope: { path: "about.md" }
+    values:
+      layout: page
+      title: About
+      eyebrow: ABOUT
+  - scope: { path: "search.md" }
+    values:
+      layout: page
+      title: Search
+      eyebrow: SEARCH
+  - scope: { type: "wisdoms" }
+    values:
+      layout: wisdom
+
+# Read once at build time so layouts can iterate without re-reading the file.
+# Note: `wisdoms/_categories.yml` is auto-loaded as `site.data.wisdoms.categories`
+# because it lives inside the collection dir but starts with `_`. To make it
+# accessible as `site.categories` we also alias here via include path. The
+# fallback path used in layouts: `site.data.wisdoms.categories` (set by Jekyll
+# convention for `<collection>/_<file>.yml`).
