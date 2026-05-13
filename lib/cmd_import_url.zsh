@@ -156,6 +156,20 @@ _wisdom_whisper_api() {
     -F response_format="text" \
     > "$out"
 }
-_wisdom_url_keyframes()         { return 0 ; }
+_wisdom_url_keyframes() {
+  local cache="$1"
+  [[ -f "$cache/video.mp4" ]] || return 0
+  if ! (( $+commands[ffmpeg] )); then
+    print -r -- "  ffmpeg not on \$PATH (brew install ffmpeg); skipping keyframes" >&2
+    return 0
+  fi
+  mkdir -p "$cache/keyframes"
+  # One frame every 5 seconds; up to 12 frames max
+  ffmpeg -y -i "$cache/video.mp4" \
+    -vf "fps=1/5,scale=720:-2" \
+    -frames:v 12 \
+    "$cache/keyframes/frame-%03d.jpg" \
+    >/dev/null 2>&1 || true
+}
 _wisdom_url_scrape_comments()   { return 0 ; }
 _wisdom_url_launch_extraction() { print -r -- "  [stub] extraction launch not implemented yet"; return 0 ; }
