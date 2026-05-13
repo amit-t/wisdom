@@ -105,7 +105,44 @@ _wisdom_url_scrape_ytdlp() {
 
   return 0
 }
-_wisdom_url_scrape_playwright() { print -r -- "  [stub] playwright fallback not implemented yet"; return 1 ; }
+_wisdom_url_scrape_playwright() {
+  local url="$1" cache="$2"
+  print -r -- "  yt-dlp failed; will request agent to scrape via Playwright MCP if available."
+  # Write a directive file the agent reads in the extraction step.
+  cat > "$cache/agent-directive.md" <<EOF
+# Scraping directive for the agent
+
+The yt-dlp layer failed for this URL:
+
+  $url
+
+If you have a Playwright MCP server registered (e.g.,
+\`@playwright/mcp\` or \`chrome-devtools-mcp\`) AND a logged-in browser
+profile on this machine that can see this URL, use it to:
+
+1. Navigate to the URL using the user's existing browser profile (NOT a
+   headless session — IG aggressively blocks those).
+2. Extract:
+   - The page title or post caption to \`$cache/caption.txt\`
+   - Any visible body text to \`$cache/page-text.txt\`
+   - Up to 3 of the top user comments (Instagram only) to
+     \`$cache/comments.txt\`
+   - The cover image to \`$cache/thumb.jpg\` if not already present
+3. If the page has a video, capture the audio stream (if MCP supports it) to
+   \`$cache/audio.mp3\` and request that the Whisper step run on it.
+
+If no Playwright MCP is registered OR the scrape fails, fall through to the
+manual-fallback flow:
+
+- Open the URL in the user's default browser:
+  \`open "$url"\` (macOS) / \`xdg-open "$url"\` (Linux)
+- Ask the user to paste the caption / quote / transcript directly into the
+  chat, then proceed with the normal Capture flow using that text.
+EOF
+  # Indicate to the caller that "scraping" succeeded in the sense that there's
+  # a directive for the agent. The agent decides whether MCP path is usable.
+  return 0
+}
 _wisdom_url_manual_fallback()   { print -r -- "  [stub] manual fallback not implemented yet"; return 1 ; }
 _wisdom_url_transcribe() {
   local cache="$1"
