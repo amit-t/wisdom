@@ -74,3 +74,25 @@ wisdom_body_hash() {
     print -r -- "$norm" | sha256sum | awk '{print $1}'
   fi
 }
+
+# Default repo location (overridable by WISDOM_REPO env).
+_WISDOM_DEFAULT_REPO="${HOME}/Projects/AmitTiwari/wisdom"
+
+# Resolve repo path. Prints to stdout, exits 2 if neither env nor default is a
+# git repo on the filesystem (only checked when STRICT=1).
+wisdom_repo_path() {
+  local strict="${WISDOM_REPO_STRICT:-0}"
+  local p="${WISDOM_REPO:-$_WISDOM_DEFAULT_REPO}"
+  if [[ "$strict" == "1" && ! -d "$p/.git" ]]; then
+    print -r -- "wisdom: repo not found at $p (set WISDOM_REPO)" >&2
+    return 2
+  fi
+  print -r -- "$p"
+}
+
+# cd into the repo. Used by subcommands before any git op.
+wisdom_cd_repo() {
+  local p
+  p=$(WISDOM_REPO_STRICT=1 wisdom_repo_path) || return $?
+  cd "$p" || return 2
+}
