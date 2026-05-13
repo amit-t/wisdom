@@ -59,3 +59,16 @@
   }
   attachCopyButtons();
 })();
+
+// Wisdom permalink: copy-link button
+document.addEventListener('click', function (e) {
+  var t = e.target;
+  if (!t.classList || !t.classList.contains('wisdom-copy')) return;
+  var url = t.getAttribute('data-clipboard');
+  if (!url) return;
+  navigator.clipboard.writeText(url).then(function () {
+    var orig = t.textContent;
+    t.textContent = 'Copied';
+    setTimeout(function () { t.textContent = orig; }, 1200);
+  });
+});
