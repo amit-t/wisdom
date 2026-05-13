@@ -107,7 +107,55 @@ _wisdom_url_scrape_ytdlp() {
 }
 _wisdom_url_scrape_playwright() { print -r -- "  [stub] playwright fallback not implemented yet"; return 1 ; }
 _wisdom_url_manual_fallback()   { print -r -- "  [stub] manual fallback not implemented yet"; return 1 ; }
-_wisdom_url_transcribe()        { return 0 ; }
+_wisdom_url_transcribe() {
+  local cache="$1"
+  local audio="" ext
+  for ext in mp3 m4a wav; do
+    [[ -f "$cache/audio.$ext" ]] && { audio="$cache/audio.$ext"; break; }
+  done
+  [[ -z "$audio" ]] && return 0
+
+  local out="$cache/transcript.txt"
+  local mode="${WISDOM_WHISPER:-local}"
+  case "$mode" in
+    local) _wisdom_whisper_local "$audio" "$out" ;;
+    api)   _wisdom_whisper_api   "$audio" "$out" ;;
+    *)
+      print -r -- "  whisper: unknown mode '$mode' (use local|api)" >&2
+      return 1 ;;
+  esac
+}
+
+# Default implementations. Either may be overridden in tests.
+_wisdom_whisper_local() {
+  local audio="$1" out="$2"
+  if ! (( $+commands[whisper] || $+commands[whisper-cpp] )); then
+    print -r -- "  whisper.cpp not on \$PATH (brew install whisper-cpp); skipping transcription" >&2
+    return 0
+  fi
+  if (( $+commands[whisper-cpp] )); then
+    whisper-cpp -f "$audio" -otxt -of "${out:r}" >/dev/null 2>&1 || true
+  else
+    whisper "$audio" --model base --output_format txt --output_dir "${out:h}" >/dev/null 2>&1 || true
+    local stem="${audio:t:r}"
+    [[ -f "${out:h}/${stem}.txt" ]] && mv "${out:h}/${stem}.txt" "$out"
+  fi
+}
+
+_wisdom_whisper_api() {
+  local audio="$1" out="$2"
+  if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+    print -r -- "  whisper api: OPENAI_API_KEY not set; skipping" >&2
+    return 0
+  fi
+  curl -sS https://api.openai.com/v1/audio/transcriptions \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: multipart/form-data" \
+    -F file="@$audio" \
+    -F model="whisper-1" \
+    -F response_format="text" \
+    > "$out"
+}
 _wisdom_url_keyframes()         { return 0 ; }
 _wisdom_url_scrape_comments()   { return 0 ; }
 _wisdom_url_launch_extraction() { print -r -- "  [stub] extraction launch not implemented yet"; return 0 ; }
