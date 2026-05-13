@@ -3,27 +3,32 @@ layout: home
 title: Wisdom
 description: A searchable corpus of curated wisdom
 hero_eyebrow: WISDOM
-hero_title: Wisdom
-hero_desc: A searchable corpus of curated wisdom
+hero_title: Things worth remembering.
+hero_desc: A personal corpus of snippets — from books, talks, threads, reels, and arguments at dinner — categorized and searchable.
 hero_actions:
-  - { label: "Get Started", href: "/getting-started.html", primary: true }
+  - { label: "Search", href: "/search/", primary: true }
   - { label: "GitHub", href: "https://github.com/amit-t/wisdom", external: true }
-hero_stats:
-  - { value: "0", label: "Releases" }
-  - { value: "0", label: "Contributors" }
-  - { value: "2026-05-13", label: "Last Update" }
 ---
 
-## What this is
+<section class="container section">
+  <h2 class="section-title">Buckets</h2>
+  <div class="bucket-grid">
+    {% for cat in site.data.wisdoms.categories %}
+      {% include bucket-tile.html cat=cat %}
+    {% endfor %}
+  </div>
+</section>
 
-Replace this paragraph with what your repo does.
-
-## Quick paths
-
-- **New here?** Start at [Getting started](./getting-started.html).
-- **API / commands?** See [Reference](./reference.html).
-- **Architecture?** See [Architecture](./architecture.html).
-
-## Why
-
-Two-line motivation. What problem does it solve.
+<section class="container section">
+  <h2 class="section-title">Recent</h2>
+  {% assign recent = site.wisdoms | sort: "created_at" | reverse %}
+  {% if recent.size == 0 %}
+    <p class="empty-state">No wisdoms yet. Capture one with <code>wisdom "your snippet"</code>.</p>
+  {% else %}
+    <div class="wisdom-list">
+      {% for w in recent limit:10 %}
+        {% include wisdom-card.html wisdom=w %}
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
