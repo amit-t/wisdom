@@ -141,7 +141,37 @@ _wisdom_import_md() {
 }
 
 # Stubs for other formats — implemented in later tasks.
-_wisdom_import_json()   { print -r -- "import: json not implemented yet" >&2; return 1; }
+_wisdom_import_json() {
+  local file="$1" dry="$2" no_cat="$3"
+  if ! (( $+commands[jq] )); then
+    print -r -- "import json: jq required (brew install jq)" >&2; return 1
+  fi
+  local n
+  n=$(jq 'length' "$file" 2>/dev/null) || { print -r -- "import json: invalid JSON" >&2; return 1; }
+  if (( dry )); then
+    print -r -- "would import $n wisdom(s) from ${file:t}"
+    jq -r '.[] | "  - " + (.body[0:80])' "$file"
+    return 0
+  fi
+
+  local repo
+  repo=$(wisdom_repo_path) || return 2
+  local written=0 i body src author note category tags_csv
+  for (( i=0; i<n; i++ )); do
+    body=$(jq -r ".[$i].body // \"\"" "$file")
+    [[ -z "$body" ]] && continue
+    src=$(jq -r ".[$i].source_url // \"\"" "$file")
+    author=$(jq -r ".[$i].source_author // \"\"" "$file")
+    note=$(jq -r ".[$i].note // \"\"" "$file")
+    category=$(jq -r ".[$i].category // \"\"" "$file")
+    tags_csv=$(jq -r ".[$i].tags // [] | join(\", \")" "$file")
+    wisdom_write_record "$body" "$src" "$author" "$note" "$category" "$tags_csv" "file:${file:t}" >/dev/null
+    written=$((written + 1))
+  done
+
+  (cd "$repo" && git add wisdoms/ && git commit -q -m "wisdom: import $written entries from ${file:t}")
+  print -r -- "imported $written entries; committed"
+}
 _wisdom_import_csv()    { print -r -- "import: csv not implemented yet"  >&2; return 1; }
 _wisdom_import_txt()    { print -r -- "import: txt not implemented yet"  >&2; return 1; }
 _wisdom_import_notion() { print -r -- "import: notion not implemented yet" >&2; return 1; }
