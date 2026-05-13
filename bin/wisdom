@@ -72,15 +72,9 @@ main() {
     -e)                    _wisdom_capture "$@" ;;
     -*)                    print -r -- "wisdom: unknown flag: $1" >&2; usage >&2; return 1 ;;
     *)
-      # Heuristic: a single bare token that looks subcommand-shaped (lowercase,
-      # no spaces, no punctuation) but isn't in the known list is treated as an
-      # unknown subcommand. Anything else (multi-word, quoted snippet) is
-      # treated as a positional snippet for capture.
-      if (( $# == 1 )) && [[ "$1" =~ ^[a-z][a-z0-9_-]*$ ]]; then
-        print -r -- "wisdom: unknown subcommand: $1" >&2
-        usage >&2
-        return 1
-      fi
+      # Positional snippet — route to capture. Length guard rejects snippets
+      # under 20 chars with exit 6; that's how "wisdom ok" or "wisdom nonsense"
+      # gets caught (rather than as "unknown subcommand").
       _wisdom_capture "$@" ;;
   esac
 }

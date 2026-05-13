@@ -17,10 +17,11 @@ rc=$?
 assert_exit_code 0 $rc "--version exit code"
 assert_contains "$out" "wisdom" "--version output"
 
-# Unknown subcommand exits 1
+# Single bare token under length-guard min is treated as a positional snippet
+# and rejected by the length guard with exit 6 (not "unknown subcommand").
 "$repo_root/bin/wisdom" nonsense >/tmp/wis-out 2>&1
 rc=$?
-assert_exit_code 1 $rc "unknown subcommand"
+assert_exit_code 6 $rc "short positional snippet rejected by length guard"
 
 # Subcommands route (real impls in P3; ls/show/find/edit/rm/import/import-url).
 # `ls` on an empty repo prints "no wisdoms yet". `import`/`import-url` without
