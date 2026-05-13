@@ -114,3 +114,16 @@ wisdom_check_length() {
   fi
   return 0
 }
+
+# Search wisdoms/ for any file containing the given normalized-body hash.
+# Args: $1 = body text, $2 = optional repo override
+# Prints matching file path(s) on stdout (newline-separated), empty if none.
+wisdom_find_dup() {
+  local body="$1"
+  local repo="${2:-$(wisdom_repo_path)}"
+  local hash
+  hash=$(wisdom_body_hash "$body")
+  [[ -d "$repo/wisdoms" ]] || return 0
+  # Match the frontmatter line exactly, avoiding false hits in body.
+  grep -rl -E "^body_hash: ${hash}\$" "$repo/wisdoms" 2>/dev/null || true
+}
