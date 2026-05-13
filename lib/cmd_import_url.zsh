@@ -70,7 +70,41 @@ _wisdom_import_url_one() {
 
 # Stubs — replaced in subsequent tasks.
 _wisdom_url_check_reimport()    { return 1 ; }
-_wisdom_url_scrape_ytdlp()      { print -r -- "  [stub] yt-dlp not implemented yet"; return 1 ; }
+_wisdom_url_scrape_ytdlp() {
+  local url="$1" cache="$2"
+  if ! (( $+commands[yt-dlp] )); then
+    print -r -- "  yt-dlp not on \$PATH (brew install yt-dlp)" >&2
+    return 1
+  fi
+
+  # Metadata
+  if ! yt-dlp \
+      --no-warnings \
+      --dump-single-json \
+      --skip-download \
+      -o "$cache/%(id)s" \
+      "$url" > "$cache/meta.json" 2>"$cache/yt-dlp-meta.err"; then
+    print -r -- "  yt-dlp metadata fetch failed; see $cache/yt-dlp-meta.err" >&2
+    return 1
+  fi
+
+  # Thumbnail
+  yt-dlp \
+      --no-warnings \
+      --skip-download \
+      --write-thumbnail \
+      -o "$cache/thumb.%(ext)s" \
+      "$url" >/dev/null 2>"$cache/yt-dlp-thumb.err" || true
+
+  # Audio (mp3 preferred)
+  yt-dlp \
+      --no-warnings \
+      -x --audio-format mp3 --audio-quality 5 \
+      -o "$cache/audio.%(ext)s" \
+      "$url" >/dev/null 2>"$cache/yt-dlp-audio.err" || true
+
+  return 0
+}
 _wisdom_url_scrape_playwright() { print -r -- "  [stub] playwright fallback not implemented yet"; return 1 ; }
 _wisdom_url_manual_fallback()   { print -r -- "  [stub] manual fallback not implemented yet"; return 1 ; }
 _wisdom_url_transcribe()        { return 0 ; }
