@@ -69,7 +69,40 @@ _wisdom_import_url_one() {
 }
 
 # Stubs — replaced in subsequent tasks.
-_wisdom_url_check_reimport()    { return 1 ; }
+_wisdom_url_check_reimport() {
+  local url="$1" repo
+  repo=$(wisdom_repo_path) || return 1
+  [[ -d "$repo/wisdoms" ]] || return 1
+
+  local hit
+  hit=$(grep -rl -F "source_url: $url" "$repo/wisdoms" 2>/dev/null | head -n 1)
+  if [[ -z "$hit" ]]; then
+    # Also check import_origin since URLs without trailing slashes could differ
+    hit=$(grep -rl -F "import_origin: url:$url" "$repo/wisdoms" 2>/dev/null | head -n 1)
+  fi
+  [[ -z "$hit" ]] && return 1
+
+  local id body_preview
+  id=$(awk -F': ' '/^id:/{print $2; exit}' "$hit")
+  body_preview=$(awk '/^---$/{n++; next} n==2 && NF{print; exit}' "$hit" | cut -c1-80)
+
+  print -r -- "  URL already imported as $id:"
+  print -r -- "    $body_preview"
+
+  local choice="${WISDOM_REIMPORT_DEFAULT:-}"
+  if [[ -z "$choice" ]]; then
+    print -n -- "    [v]iew / [u]pdate-note / [n]ew-extract / [c]ancel (default: c): "
+    read -r choice
+    [[ -z "$choice" ]] && choice=c
+  fi
+  case "${choice:0:1}" in
+    v) _wisdom_show "$id" ; return 0 ;;
+    u) print -r -- "    update-note: not yet wired; cancelled (use \`wisdom edit $id\`)" >&2; return 0 ;;
+    n) print -r -- "    proceeding with new extraction from same URL" ; return 1 ;;
+    s) print -r -- "    skipped (already imported)" ; return 0 ;;
+    c|*) print -r -- "    cancelled" ; return 0 ;;
+  esac
+}
 _wisdom_url_scrape_ytdlp() {
   local url="$1" cache="$2"
   if ! (( $+commands[yt-dlp] )); then
