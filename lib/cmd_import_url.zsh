@@ -208,5 +208,42 @@ _wisdom_url_keyframes() {
     "$cache/keyframes/frame-%03d.jpg" \
     >/dev/null 2>&1 || true
 }
-_wisdom_url_scrape_comments()   { return 0 ; }
+_wisdom_url_scrape_comments() {
+  local url="$1" cache="$2"
+  if ! (( $+commands[yt-dlp] )); then
+    return 0
+  fi
+  # Try yt-dlp first
+  if yt-dlp \
+      --no-warnings \
+      --skip-download \
+      --write-comments \
+      -o "$cache/_comments" \
+      "$url" >/dev/null 2>"$cache/yt-dlp-comments.err"; then
+    # Take top 5 comments by like count
+    if [[ -f "$cache/_comments.info.json" ]]; then
+      jq -r '
+        (.comments // [])
+        | sort_by(-(.like_count // 0))
+        | .[0:5]
+        | map("- @" + (.author // "?") + ": " + ((.text // "") | gsub("\n"; " ")))
+        | .[]
+      ' "$cache/_comments.info.json" > "$cache/comments.txt"
+    fi
+  fi
+
+  # Augment with Playwright directive if no comments file was produced
+  if [[ ! -s "$cache/comments.txt" ]]; then
+    cat >> "$cache/agent-directive.md" 2>/dev/null <<EOF
+
+# Comments scrape directive
+
+yt-dlp did not produce comments for this Instagram URL. If you have a
+Playwright MCP path available, scrape the top 5 comments from the post and
+write them to \`$cache/comments.txt\`, one per line, prefixed with the
+commenter handle, e.g. \`- @handle: comment text\`.
+EOF
+  fi
+  return 0
+}
 _wisdom_url_launch_extraction() { print -r -- "  [stub] extraction launch not implemented yet"; return 0 ; }
