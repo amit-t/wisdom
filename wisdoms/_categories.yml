@@ -1,0 +1,29 @@
+categories:
+  - key: engineering
+    label: Engineering
+    color: electric-blue
+    description: code, systems, debugging, architecture
+  - key: leadership
+    label: Leadership
+    color: hot-pink
+    description: managing, hiring, org design, decisions
+  - key: writing
+    label: Writing
+    color: purple-accent
+    description: prose, docs, comms, storytelling
+  - key: product
+    label: Product
+    color: warm-coral
+    description: strategy, roadmaps, PMF, prioritization
+  - key: craft
+    label: Craft
+    color: lime-green
+    description: taste, mastery, deliberate practice
+  - key: life
+    label: Life
+    color: vibrant-orange
+    description: non-work wisdom worth keeping
+
+color_pool:
+  - cyan-accent
+  - yellow-accent
