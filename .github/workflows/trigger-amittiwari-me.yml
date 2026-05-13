@@ -1,0 +1,52 @@
+name: Trigger amittiwari.me redeploy
+
+# When a wisdom is captured and pushed here, ping the DigitalOcean App
+# Platform deploy webhook for amittiwari.me so it rebuilds and picks up the
+# new entry. amittiwari.me consumes this repo as a git submodule
+# (external/wisdom) and pulls --remote on each build, so a redeploy is all
+# that's needed; we don't bump a submodule pointer or open a PR.
+#
+# One-time setup:
+# 1. In the DigitalOcean App Platform console, open the amittiwari-me app →
+#    Settings → App-Level → Deploy Triggers → "Create deploy trigger" and
+#    copy the webhook URL.
+# 2. In this repo: Settings → Secrets and variables → Actions → New
+#    repository secret. Name: AMITTIWARI_ME_DO_DEPLOY_WEBHOOK. Value: the
+#    URL from step 1.
+#
+# Until the secret exists the workflow runs but skips the POST with a
+# warning — pushes are not blocked.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: trigger-amittiwari-me
+  cancel-in-progress: false
+
+jobs:
+  redeploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST to deploy webhook
+        env:
+          WEBHOOK: ${{ secrets.AMITTIWARI_ME_DO_DEPLOY_WEBHOOK }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "::warning::AMITTIWARI_ME_DO_DEPLOY_WEBHOOK secret not set; skipping redeploy. See the workflow file for setup instructions."
+            exit 0
+          fi
+          response=$(mktemp)
+          status=$(curl -sS -X POST -o "$response" -w "%{http_code}" "$WEBHOOK") || status=000
+          echo "deploy webhook returned HTTP $status"
+          head -c 2000 "$response" || true
+          echo
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::deploy webhook POST failed (HTTP $status)"
+            exit 1
+          fi
