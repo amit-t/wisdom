@@ -1,0 +1,37 @@
+title: Wisdom
+description: A searchable corpus of curated wisdom
+baseurl: /wisdom
+url: https://amit-t.github.io
+theme: null
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-relative-links
+
+permalink: pretty
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: highlight
+
+include:
+  - .well-known
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - node_modules
+  - README.md
+  - LICENSE
+  - .github
+
+defaults:
+  - scope: { path: "" }
+    values:
+      layout: page
+  - scope: { path: "index.md" }
+    values:
+      layout: home
