@@ -1044,53 +1044,6 @@ body.drawer-open {
   overflow: hidden;
 }
 
-/* ===== EMBED MODE =====
-   Active when Wisdom is rendered inside amittiwari.me's /wisdom iframe.
-   Hides chrome the parent already provides, trims outer padding, and
-   aligns the design tokens with amittiwari.me's tailwind palette so the
-   seam between host page and iframe is invisible. */
-body.embed .site-nav,
-body.embed .theme-switcher,
-body.embed .footer,
-body.embed .divider:first-of-type {
-  display: none !important;
-}
-
-body.embed {
-  /* Match amittiwari.me's `base-bg-light` / `text-light`. */
-  --bg-light: #f8f8f8;
-  --text-light: #000000;
-  --surface-light: #ffffff;
-  background: var(--bg-light);
-}
-
-body.embed.dark {
-  /* Match amittiwari.me's `base-bg-dark` / `text-dark`. */
-  --bg-dark: #121212;
-  --text-dark: #f0f0f0;
-  --surface-dark: #1e1e1e;
-  background: var(--bg-dark);
-}
-
-body.embed .hero {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-}
-
-body.embed .hero h1 {
-  font-size: clamp(2rem, 5vw, 3.5rem);
-}
-
-body.embed .container {
-  /* Match amittiwari.me's main max-width so cards align with the
-     wrapping chrome rather than the wider Wisdom container. */
-  width: min(1100px, calc(100% - 1.5rem));
-}
-
-body.embed .section {
-  padding-top: 1rem;
-}
-
 /* ===== SCREEN READER ===== */
 .sr-only {
   position: absolute;

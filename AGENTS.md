@@ -32,18 +32,18 @@ Run `zsh tests/run.zsh` before declaring work complete.
 - Do not use `git add -A`. Always stage specific files.
 - Do not skip pre-commit hooks (no `--no-verify`).
 
-## Embed mode (amittiwari.me integration)
+## amittiwari.me integration
 
-Wisdom is also rendered inside `https://amittiwari.me/wisdom` via a cross-origin
-iframe. When loaded with `?embed=1`, the layout strips its own nav, theme
-switcher, and footer (the host page provides those) and aligns its design
-tokens to amittiwari.me's palette.
+The amittiwari.me Next.js site clones this repo at build time (via
+`scripts/sync-wisdom.zsh`) and renders the corpus natively in its own
+neo-brutalist design. Wisdom remains the single source of truth — the
+markdown frontmatter (`category`, `tags`, `created_at`, `source_url`,
+`source_author`, `note`) is the wire format both sites consume.
 
-- Implementation: `assets/js/site.js` reads `?embed=1` + `?theme=…`, listens for
-  `postMessage({type:'wisdom:theme', theme})` from `https://amittiwari.me`, and
-  rewrites internal `<a href>` clicks to preserve the embed flag so deep links
-  stay inside the embed.
-- CSS lives under `body.embed` selectors in `assets/css/site.css`.
-- The standalone site (without `?embed=1`) is unchanged.
-- If you change selectors or class names on `.site-nav`, `.theme-switcher`, or
-  `.footer`, update the embed selectors too.
+- If you change the frontmatter shape, update the matching types in
+  `amittiwari-me/src/lib/wisdom.ts` as well.
+- If you rename `wisdoms/_categories.yml` or restructure `wisdoms/<YYYY>/<MM>/`,
+  update the data layer there too.
+- The standalone Jekyll site (this repo) keeps its full chrome, theme switcher,
+  Pagefind search, etc. amittiwari.me's `/wisdom` page links out to it for
+  search and the canonical permalink.
