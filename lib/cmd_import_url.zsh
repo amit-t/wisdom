@@ -17,54 +17,53 @@ _wisdom_import_url() {
   done
   (( ${#urls} == 0 )) && { print -r -- "import-url: at least one URL required" >&2; return 1; }
 
+  # Scrape phase — parallel for >1 URL
+  if (( ${#urls} > 1 )); then
+    print -r -- "import-url: scraping ${#urls} URLs in parallel..."
+    local url
+    local -a pids
+    for url in $urls; do
+      ( _wisdom_url_scrape_only "$url" ) &
+      pids+=($!)
+    done
+    local pid
+    for pid in $pids; do wait "$pid"; done
+  fi
+
+  # Extract phase — sequential (each opens an agent session)
   local url
   for url in $urls; do
-    _wisdom_import_url_one "$url" "$engine" || {
-      print -r -- "import-url: failed for $url (continuing with remaining URLs)" >&2
-    }
+    _wisdom_import_url_one "$url" "$engine" || \
+      print -r -- "import-url: failed for $url (continuing)" >&2
   done
 }
 
-# Process one URL: scrape, build preview bundle, launch agent for extraction.
-_wisdom_import_url_one() {
-  local url="$1" engine="$2"
-  print -r -- "import-url: $url"
-
-  # Re-import dedup check (real impl in C17)
-  if _wisdom_url_check_reimport "$url"; then
-    return 0
-  fi
-
-  local cache
+# Scrape-only: runs everything except the agent extraction launch.
+_wisdom_url_scrape_only() {
+  local url="$1" cache
   cache=$(wisdom_url_cache_dir "$url")
-
-  # Layer 1: yt-dlp scrape
-  if _wisdom_url_scrape_ytdlp "$url" "$cache"; then
-    :
-  else
-    # Layer 2: Playwright MCP / agent fallback
-    if ! _wisdom_url_scrape_playwright "$url" "$cache"; then
-      # Layer 3: manual fallback
-      _wisdom_url_manual_fallback "$url" "$cache" || return 7
-    fi
+  if _wisdom_url_check_reimport "$url"; then return 0; fi
+  if ! _wisdom_url_scrape_ytdlp "$url" "$cache"; then
+    _wisdom_url_scrape_playwright "$url" "$cache" || _wisdom_url_manual_fallback "$url" "$cache" || true
   fi
-
-  # Whisper transcription if audio exists
-  if [[ -f "$cache/audio.mp3" || -f "$cache/audio.m4a" || -f "$cache/audio.wav" ]]; then
-    _wisdom_url_transcribe "$cache" || true
-  fi
-
-  # ffmpeg keyframes if video exists
-  if [[ -f "$cache/video.mp4" ]]; then
-    _wisdom_url_keyframes "$cache" || true
-  fi
-
-  # Comments scrape (IG only)
+  [[ -f "$cache/audio.mp3" || -f "$cache/audio.m4a" || -f "$cache/audio.wav" ]] && _wisdom_url_transcribe "$cache" || true
+  [[ -f "$cache/video.mp4" ]] && _wisdom_url_keyframes "$cache" || true
   case "$(wisdom_url_domain "$url")" in
     instagram) _wisdom_url_scrape_comments "$url" "$cache" || true ;;
   esac
+}
 
-  # Hand off to agent session for extraction
+# Process one URL: ensure cache populated, then launch extraction.
+_wisdom_import_url_one() {
+  local url="$1" engine="$2"
+  print -r -- "import-url: extract for $url"
+  local cache
+  cache=$(wisdom_url_cache_dir "$url")
+  # If the cache is empty (single-URL invocation skipped the pre-step), run
+  # the scrape inline now.
+  if [[ ! -e "$cache/meta.json" && ! -f "$cache/manual-paste.txt" && ! -f "$cache/agent-directive.md" ]]; then
+    _wisdom_url_scrape_only "$url"
+  fi
   _wisdom_url_launch_extraction "$url" "$cache" "$engine"
 }
 
