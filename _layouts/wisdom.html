@@ -1,0 +1,66 @@
+---
+layout: base
+---
+{% assign cat_key = page.category %}
+{% assign cat = site.data.wisdoms.categories | where: "key", cat_key | first %}
+
+<header class="container doc-hero">
+  {% if cat %}
+    <span class="doc-hero-eyebrow eyebrow-{{ cat.color }}">
+      <a href="{{ '/buckets/' | append: cat.key | append: '/' | relative_url }}">{{ cat.label }}</a>
+    </span>
+  {% endif %}
+  {% if page.source_author %}
+    <h1>{{ page.source_author | escape }}</h1>
+  {% else %}
+    <h1>Wisdom</h1>
+  {% endif %}
+  <p class="doc-hero-desc">{{ page.created_at | date: "%B %-d, %Y" }}</p>
+</header>
+
+<main class="container section">
+  <article
+    class="markdown-body wisdom-permalink"
+    data-pagefind-body
+    data-pagefind-filter="category:{{ page.category }}"
+    {% for t in page.tags %}data-pagefind-filter="tag:{{ t }}" {% endfor %}
+    data-pagefind-meta="title:{{ page.category }} — {{ page.content | strip_html | strip_newlines | truncate: 80 }}"
+    data-pagefind-meta="date:{{ page.created_at | date: '%Y-%m-%d' }}"
+    data-pagefind-meta="url:{{ page.url | relative_url }}">
+
+    <blockquote class="wisdom-body">
+      {{ content }}
+    </blockquote>
+
+    {% if page.note and page.note != "" %}
+      <aside class="wisdom-note">
+        <p class="wisdom-note-label">AT says</p>
+        <p>{{ page.note | escape }}</p>
+      </aside>
+    {% endif %}
+
+    <dl class="wisdom-meta">
+      {% if page.source_url and page.source_url != "null" %}
+        <dt>Source</dt>
+        <dd><a href="{{ page.source_url }}" rel="noreferrer">{{ page.source_url | truncate: 60 }}</a></dd>
+      {% endif %}
+      {% if page.source_author and page.source_author != "null" %}
+        <dt>Author</dt>
+        <dd>{{ page.source_author | escape }}</dd>
+      {% endif %}
+      {% if page.tags and page.tags.size > 0 %}
+        <dt>Tags</dt>
+        <dd>
+          {% for t in page.tags %}
+            <a class="wisdom-tag" href="{{ '/tags/' | append: t | append: '/' | relative_url }}">#{{ t }}</a>
+          {% endfor %}
+        </dd>
+      {% endif %}
+      <dt>Permalink</dt>
+      <dd>
+        <code>{{ page.url | absolute_url }}</code>
+        <button class="wisdom-copy" type="button" data-clipboard="{{ page.url | absolute_url }}">Copy</button>
+      </dd>
+    </dl>
+  </article>
+</main>
