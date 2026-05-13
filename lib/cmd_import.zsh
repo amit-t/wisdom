@@ -228,5 +228,91 @@ PY
   (cd "$repo" && git add wisdoms/ && git commit -q -m "wisdom: import $written entries from ${file:t}")
   print -r -- "imported $written entries; committed"
 }
-_wisdom_import_txt()    { print -r -- "import: txt not implemented yet"  >&2; return 1; }
-_wisdom_import_notion() { print -r -- "import: notion not implemented yet" >&2; return 1; }
+_wisdom_import_txt() {
+  local file="$1" dry="$2" no_cat="$3"
+  # Split on blank-line-separated paragraphs by writing chunks to a tmp dir.
+  local tmpdir
+  tmpdir=$(mktemp -d -t wisdom-txt-split.XXXXXX)
+  awk -v outdir="$tmpdir" '
+    BEGIN { idx = 0; rec = "" }
+    /^[[:space:]]*$/ {
+      if (rec != "") {
+        f = sprintf("%s/p-%04d.txt", outdir, idx)
+        print rec > f
+        close(f)
+        idx++
+        rec = ""
+      }
+      next
+    }
+    { rec = (rec == "" ? $0 : rec "\n" $0) }
+    END {
+      if (rec != "") {
+        f = sprintf("%s/p-%04d.txt", outdir, idx)
+        print rec > f
+        close(f)
+      }
+    }
+  ' "$file"
+
+  local -a chunk_files
+  chunk_files=("$tmpdir"/p-*.txt(N))
+
+  local -a clean
+  local cf content trimmed
+  for cf in $chunk_files; do
+    content=$(<"$cf")
+    trimmed="${content//[$'\n\t ']/}"
+    [[ -n "$trimmed" ]] && clean+=("$content")
+  done
+
+  local n=${#clean}
+  if (( dry )); then
+    print -r -- "would import $n wisdom(s) from ${file:t}"
+    rm -rf "$tmpdir"
+    return 0
+  fi
+
+  local repo
+  repo=$(wisdom_repo_path) || return 2
+  local written=0 p
+  for p in $clean; do
+    wisdom_write_record "$p" "" "" "" "" "" "file:${file:t}" >/dev/null
+    written=$((written + 1))
+  done
+  rm -rf "$tmpdir"
+  (cd "$repo" && git add wisdoms/ && git commit -q -m "wisdom: import $written entries from ${file:t}")
+  print -r -- "imported $written entries; committed"
+}
+
+_wisdom_import_notion() {
+  local file="$1" dry="$2" no_cat="$3"
+  if ! (( $+commands[unzip] )); then
+    print -r -- "import notion: unzip required" >&2; return 1
+  fi
+  local extract
+  extract=$(mktemp -d -t wisdom-notion.XXXXXX)
+  unzip -q "$file" -d "$extract"
+  local -a md_files
+  md_files=("$extract"/**/*.md(N))
+  local n=${#md_files}
+  if (( dry )); then
+    print -r -- "would import $n Notion page(s) from ${file:t}"
+    rm -rf "$extract"
+    return 0
+  fi
+
+  local repo
+  repo=$(wisdom_repo_path) || return 2
+  local written=0 f body
+  for f in $md_files; do
+    # Body = file minus the H1 "# Title" line if present
+    body=$(sed -E '1{/^# /d;}' "$f")
+    [[ -z "${body//[[:space:]]/}" ]] && continue
+    wisdom_write_record "$body" "" "" "" "" "" "file:notion:${f:t}" >/dev/null
+    written=$((written + 1))
+  done
+  rm -rf "$extract"
+  (cd "$repo" && git add wisdoms/ && git commit -q -m "wisdom: import $written entries from ${file:t}")
+  print -r -- "imported $written entries; committed"
+}
