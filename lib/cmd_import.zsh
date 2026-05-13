@@ -172,6 +172,61 @@ _wisdom_import_json() {
   (cd "$repo" && git add wisdoms/ && git commit -q -m "wisdom: import $written entries from ${file:t}")
   print -r -- "imported $written entries; committed"
 }
-_wisdom_import_csv()    { print -r -- "import: csv not implemented yet"  >&2; return 1; }
+_wisdom_import_csv() {
+  local file="$1" dry="$2" no_cat="$3"
+  if ! (( $+commands[python3] )); then
+    print -r -- "import csv: python3 required" >&2; return 1
+  fi
+
+  local repo
+  repo=$(wisdom_repo_path) || return 2
+
+  # Parse CSV via python; emit one record per line as base64-encoded JSON.
+  local rows
+  rows=$(python3 - "$file" <<'PY'
+import csv, sys, json, base64
+with open(sys.argv[1], newline='') as fh:
+    reader = csv.DictReader(fh)
+    for r in reader:
+        rec = {
+            'body': (r.get('body') or '').strip(),
+            'source_url': (r.get('source_url') or '').strip(),
+            'source_author': (r.get('source_author') or '').strip(),
+            'note': (r.get('note') or '').strip(),
+            'category': (r.get('category') or '').strip(),
+            'tags': (r.get('tags') or '').strip(),
+        }
+        if not rec['body']:
+            continue
+        print(base64.b64encode(json.dumps(rec).encode()).decode())
+PY
+  )
+
+  local n
+  n=$(print -r -- "$rows" | grep -c . || true)
+
+  if (( dry )); then
+    print -r -- "would import $n wisdom(s) from ${file:t}"
+    return 0
+  fi
+
+  local written=0 line dec body src author note category tags_pipe tags_csv
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    dec=$(print -r -- "$line" | base64 --decode)
+    body=$(jq -r .body <<<"$dec")
+    src=$(jq -r .source_url <<<"$dec")
+    author=$(jq -r .source_author <<<"$dec")
+    note=$(jq -r .note <<<"$dec")
+    category=$(jq -r .category <<<"$dec")
+    tags_pipe=$(jq -r .tags <<<"$dec")
+    tags_csv="${tags_pipe//|/, }"
+    wisdom_write_record "$body" "$src" "$author" "$note" "$category" "$tags_csv" "file:${file:t}" >/dev/null
+    written=$((written + 1))
+  done <<<"$rows"
+
+  (cd "$repo" && git add wisdoms/ && git commit -q -m "wisdom: import $written entries from ${file:t}")
+  print -r -- "imported $written entries; committed"
+}
 _wisdom_import_txt()    { print -r -- "import: txt not implemented yet"  >&2; return 1; }
 _wisdom_import_notion() { print -r -- "import: notion not implemented yet" >&2; return 1; }
