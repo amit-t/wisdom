@@ -1,6 +1,14 @@
 #!/usr/bin/env zsh
-# Wisdom installer: symlinks bin/wisdom and the skill into engine-specific dirs.
-# Idempotent; safe to re-run.
+# Wisdom installer: symlinks bin/wisdom into ~/bin. Idempotent.
+#
+# The wisdom-capture skill is NOT installed by this script. It is published in
+# the at-skills catalog and installed per-project via the `skills` CLI:
+#
+#   npx skills@latest add amit-t/skills --skill wisdom-capture
+#
+# Run that from inside this repo (or any consumer repo). The skill lands at
+# `.claude/skills/wisdom-capture/` (project-level) and Claude auto-discovers
+# it when invoked from this project.
 
 set -e
 script_path=${0:A}
@@ -21,21 +29,19 @@ link_or_replace() {
   print -r -- "  linked $dst -> $src"
 }
 
-print -r -- "Installing wisdom CLI + skill from: $repo_root"
+print -r -- "Installing wisdom CLI from: $repo_root"
 
-# CLI
 link_or_replace "$repo_root/bin/wisdom" "$HOME/bin/wisdom"
-
-# Skill (canonical location → engine-specific skill dirs)
-local skill="$repo_root/.agents/skills/wisdom-capture"
-for engine in claude codex devin; do
-  link_or_replace "$skill" "$HOME/.$engine/skills/wisdom-capture"
-done
 
 print
 print -r -- "Add these lines to your ~/.zshrc (or equivalent):"
 print -r -- ""
 print -r -- "    export PATH=\"\$HOME/bin:\$PATH\""
 print -r -- "    export WISDOM_REPO=\"$repo_root\""
+print -r -- ""
+print -r -- "Install the wisdom-capture skill into this project:"
+print -r -- ""
+print -r -- "    cd $repo_root"
+print -r -- "    npx skills@latest add amit-t/skills --skill wisdom-capture"
 print -r -- ""
 print -r -- "Done. Try: wisdom --help"

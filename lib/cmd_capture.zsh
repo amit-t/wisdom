@@ -6,6 +6,11 @@ _WISDOM_EDIT_TEMPLATE='# Paste or type your wisdom below this line. Lines starti
 
 '
 
+# Kickoff prompt sent as the first user turn when `wisdom` is launched with no
+# snippet. Matches the wisdom-capture skill description so the agent auto-
+# engages and prompts the user for the snippet instead of sitting idle.
+_WISDOM_KICKOFF_PROMPT='I want to record a wisdom snippet. Engage the wisdom-capture skill and ask me to paste it.'
+
 # Real engine launcher; can be overridden in tests.
 _wisdom_launch_engine() {
   local engine="$1"; shift
@@ -14,15 +19,19 @@ _wisdom_launch_engine() {
   repo=$(wisdom_repo_path) || return 2
   cd "$repo" || return 2
 
+  # Pick the first-turn payload: real snippet if provided, else the kickoff
+  # prompt that auto-engages the skill.
+  local first_turn
+  if [[ -n "$snippet" ]]; then
+    first_turn="Record this wisdom snippet:\n\n$snippet"
+  else
+    first_turn="$_WISDOM_KICKOFF_PROMPT"
+  fi
+
   case "$engine" in
     claude)
       if (( $+commands[claude] )); then
-        if [[ -n "$snippet" ]]; then
-          # Pre-feed the snippet as first user turn, skill auto-engages from AGENTS.md.
-          print -r -- "Record this wisdom snippet:\n\n$snippet" | claude
-        else
-          claude
-        fi
+        print -r -- "$first_turn" | claude
       else
         print -r -- "wisdom: 'claude' CLI not found on \$PATH" >&2
         return 3
@@ -30,11 +39,7 @@ _wisdom_launch_engine() {
       ;;
     codex)
       if (( $+commands[codex] )); then
-        if [[ -n "$snippet" ]]; then
-          print -r -- "Record this wisdom snippet:\n\n$snippet" | codex
-        else
-          codex
-        fi
+        print -r -- "$first_turn" | codex
       else
         print -r -- "wisdom: 'codex' CLI not found on \$PATH" >&2
         return 3
@@ -42,11 +47,7 @@ _wisdom_launch_engine() {
       ;;
     devin)
       if (( $+commands[devin] )); then
-        if [[ -n "$snippet" ]]; then
-          devin --task "Record this wisdom snippet:\n\n$snippet"
-        else
-          devin
-        fi
+        devin --task "$first_turn"
       else
         print -r -- "wisdom: 'devin' CLI not found on \$PATH" >&2
         return 3

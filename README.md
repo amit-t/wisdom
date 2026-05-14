@@ -20,11 +20,19 @@ build.
 ```bash
 git clone <this-repo> ~/Projects/AmitTiwari/wisdom
 cd ~/Projects/AmitTiwari/wisdom
+
+# 1. CLI on PATH
 ./install.sh
-# Follow the printed instructions to add WISDOM_REPO to ~/.zshrc
+# Follow the printed instructions to add WISDOM_REPO + PATH to ~/.zshrc
+
+# 2. wisdom-capture skill into this project
+npx skills@latest add amit-t/skills --skill wisdom-capture
 
 wisdom "Premature optimization is the root of all evil. — Donald Knuth"
 ```
+
+The skill is published in the [at-skills catalog](https://github.com/amit-t/skills/tree/main/wisdom-capture).
+Re-run the `npx` command to upgrade.
 
 ## Subcommands
 
