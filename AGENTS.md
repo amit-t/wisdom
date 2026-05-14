@@ -53,6 +53,21 @@ Run `zsh tests/run.zsh` before declaring work complete.
 - Do not use `git add -A`. Always stage specific files.
 - Do not skip pre-commit hooks (no `--no-verify`).
 
+## Pushing changes
+
+Direct push to `main` is policy-blocked. When `git push origin main` is denied
+with a direct-push-to-main reason, do NOT surface that as a dead end. Fall
+back automatically:
+
+1. Create a topic branch at the current HEAD (e.g. `wisdom/<ulid-prefix>` for
+   wisdom commits, `fix/<slug>` / `feat/<slug>` otherwise).
+2. Reset local `main` to `origin/main` so it stays clean.
+3. Push the topic branch.
+4. Open a PR to `main` with `gh pr create`.
+
+Report the PR URL back to the user. This applies to all agents, not just the
+wisdom flow.
+
 ## amittiwari.me integration
 
 The amittiwari.me Next.js site consumes this repo as a git submodule at
